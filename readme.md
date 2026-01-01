@@ -170,18 +170,9 @@ For wach actual release see [https://github.com/netbox-community/netbox/releases
             (identity with /opt/netbox/contrib/nginx.conf, there is)
 
 #### Run
-`cp /opt/netbox/contrib/nginx.conf /etc/nginx/sites-available/netbox`
+`cp /opt/netbox/contrib/nginx.conf /etc/nginx/sites-available/netbox.conf`
 `rm /etc/nginx/sites-enabled/default`
- `ln -s /etc/nginx/sites-available/netbox /etc/nginx/sites-enabled/netbox`
+ `ln -s /etc/nginx/sites-available/netbox.conf /etc/nginx/sites-enabled/netbox.conf`
 
 #### Rename your server_name in nginx netbox config file and check your configuration
-
-`vi /etc/nginx/sites-available/netbox`
-`nginx -t`
-`systemctl restart nginx`
-
-
-
-
-
 

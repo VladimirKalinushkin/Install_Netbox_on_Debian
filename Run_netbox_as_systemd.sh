@@ -10,10 +10,10 @@
     cp -v /opt/netbox/contrib/*.service /etc/systemd/system/
     systemctl daemon-reload
 
-    systemctl enable --now netbox 
-    systemctl enable --now netboxnetbox-rq
     systemctl start netbox 
     systemctl start netbox-rq
+    systemctl enable --now netbox 
+    systemctl enable --now netboxnetbox-rq
     
     systemctl status netbox.service
 

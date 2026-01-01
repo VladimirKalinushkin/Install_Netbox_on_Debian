@@ -13,10 +13,6 @@
     postgresql \
     -y
 
-    systemctl enable redis
-    systemctl enable postgresql
-
-
     # Python libraries install
     apt install -y python3 python3-pip python3-venv python3-dev \
     build-essential libxml2-dev libxslt1-dev libffi-dev libpq-dev \
@@ -28,6 +24,13 @@
     apt install nginx ufw openssl \
     -y
 
+
+    systemctl start redis
+    systemctl start postgresql
+    systemctl start nginx
+
+    systemctl enable redis
+    systemctl enable postgresql
     systemctl enable nginx
 
     ufw enable
@@ -56,3 +59,4 @@
     cd /opt/netbox/netbox/netbox/
     cp configuration_example.py configuration.py
     ../generate_secret_key.py > key.txt
+
