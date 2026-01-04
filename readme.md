@@ -161,7 +161,7 @@ For wach actual release see [https://github.com/netbox-community/netbox/releases
 ##### b. Configure your installation port in /opt/netbox/gunicorn.py/gunicorn.py (bind = '127.0.0.1:8001')
 
 
-### 11. Install and configuring Apache or Nginx as a Reverse Proxy
+### 8. Install and configuring Apache or Nginx as a Reverse Proxy
 
 #### Example config in /opt/netbox/contrib/ is nginx.conf and apache.conf
 
