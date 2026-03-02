@@ -21,7 +21,7 @@ For wach actual release see [https://github.com/netbox-community/netbox/releases
 
 
 ### 1. Install Requirements packages and download netbox with 
-`Install_packages.sh`
+`Install_netbox.sh`
 
 ### 2. Configure Redis and PostgreSQL:
 
