@@ -55,14 +55,18 @@ fi
 
 
 # Install packages
-apt update > /dev/null
+echo "--------------------"
+echo "Start apt update!"
+apt update -y > /dev/null
 echo
 echo "--------------------"
 echo "Apt was updated!"
 echo
 
 # Postgres and redis install
-apt install wget curl \
+echo "--------------------"
+echo "Start installing Wget,redis-server, postgresql and curl!"
+apt install -y wget curl \
 redis-server \
 postgresql \
 -y \
@@ -73,6 +77,8 @@ echo "Wget,redis-server, postgresql and curl were installed!"
 echo
 
 # Python libraries install
+echo "--------------------"
+echo "Start installing Puthon libraries!"
 apt install -y python3 python3-pip python3-venv python3-dev \
 build-essential libxml2-dev libxslt1-dev libffi-dev libpq-dev \
 libssl-dev zlib1g-dev \
@@ -84,6 +90,8 @@ echo "Python libraries were installed!"
 echo
 
 # Install nginx
+echo "--------------------"
+echo "Start installing nginx? ufw and openssl!"
 apt install nginx ufw openssl \
 -y \
  > /dev/null
