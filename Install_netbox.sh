@@ -17,7 +17,7 @@ Redis_config="/etc/redis/redis.conf"
 Listened_address="0.0.0.0"
 Listened_port="443"
 Proxy_pass_address="127.0.0.1"
-Proxy_pass_port="8081"
+Proxy_pass_port="8001"
 Name_server="netbox.example.com"
 
 Ssl_certificate_address="/etc/ssl/certs/netbox.crt"
