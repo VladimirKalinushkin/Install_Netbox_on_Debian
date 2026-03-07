@@ -46,7 +46,42 @@ function Read_Varriable {
     fi
 }
 
+function Read_Password {
 
+    local -n Target_buf=$2
+    local Message="$1"
+    local User_input
+    local Check
+
+    echo -n "$Message: " 
+    read -s User_input
+    echo
+
+    if [ -n "$User_input" ]
+    then
+        echo -n "Re-enter your password: " 
+        read -s Check
+        echo
+        if [ -n "$Check" ]
+        then
+            if [ "$User_input" = "$Check" ];
+            then
+                Target_buf="$User_input"
+                return 0
+            else
+                echo "Passwords do not match! You will exited!"
+                return 1
+            fi
+        else
+            echo "You didn't enter your password! You will exited!"
+            return 1
+        fi
+    else
+        echo "You didn't enter your password! You will exited!"
+        return 1
+    fi
+
+}
 
 echo
 echo "--------------------"
@@ -60,33 +95,12 @@ Read_Varriable "Enter yor server name, default (empty value) - $Name_server" Nam
 Read_Varriable "Enter address of server, default (empty value) - $Proxy_pass_address" Proxy_pass_address
 Read_Varriable "Enter port to work netbox, default (empty value) - $Proxy_pass_port" Proxy_pass_port
 
-echo -n "Enter password for Redis: " 
-read -s Read_buf
-echo
-if [ -n "$Read_buf" ]
+Read_Password "Enter password for Redis-server" Password_Redis
+if [ $? -ne 0 ]
 then
-    Check=""
-    echo -n "Re-enter password for Redis: " 
-    read -s Check
-    echo
-    if [ -n "$Check" ]
-    then
-        if [ "$Read_buf" = "$Check" ];
-        then
-            Password_Redis="$Read_buf"
-        else
-            echo "Passwords do not match! You will be exited!"
-            exit 1
-        fi
-    else
-        echo "You didn't enter your password for Redis! You will exited!"
-        exit 1
-    fi
-else
-    echo "You didn't enter your password for Redis! You will exited!"
+    echo "Error reading password. Exiting."
     exit 1
 fi
-
 
 
 # Install packages
