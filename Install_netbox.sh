@@ -34,8 +34,8 @@ Password_Redis=""
 
 function Read_Varriable {
 
-    local -n Target_buf=$1
-    local Message="$2"
+    local -n Target_buf=$2
+    local Message="$1"
     local User_input
 
     read -p "$Message: " User_input
@@ -56,9 +56,9 @@ echo
 
 # Read name, address, paroles and ports
 
-Read_Varriable Name_server "Enter yor server name, default (empty value) - netbox.example.com"
-Read_Varriable Proxy_pass_address "Enter address of server, default (empty value) - 127.0.0.1"
-Read_Varriable Proxy_pass_port "Enter port to work netbox, default (empty value) - 8081"
+Read_Varriable "Enter yor server name, default (empty value) - $Name_server" Name_server
+Read_Varriable "Enter address of server, default (empty value) - $Proxy_pass_address" Proxy_pass_address
+Read_Varriable "Enter port to work netbox, default (empty value) - $Proxy_pass_port" Proxy_pass_port
 
 echo -n "Enter password for Redis: " 
 read -s Read_buf
