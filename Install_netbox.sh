@@ -10,23 +10,19 @@ version=4.4.8
 
 Example_config_nginx="./Includes/netbox_wth_ssl.conf"
 Nginx_config="/etc/nginx/sites-available/netbox.conf"
-
 Redis_config="/etc/redis/redis.conf"
-
+Netbox_core_path="/opt/netbox-$version/netbox/netbox"
 
 Listened_address="0.0.0.0"
 Listened_port="443"
 Proxy_pass_address="127.0.0.1"
 Proxy_pass_port="8001"
 Name_server="netbox.example.com"
-
 Ssl_certificate_address="/etc/ssl/certs/netbox.crt"
 Ssl_certificate_key_address="/etc/ssl/private/netbox.key"
-
 Client_max_body_size="25m"
 
 Space="\ \ \ \ "
-
 
 Password_Redis=""
 
@@ -154,7 +150,7 @@ echo
 
 # Install nginx
 echo "--------------------"
-echo "Start installing nginx? ufw and openssl!"
+echo "Start installing nginx, ufw and openssl!"
 apt install nginx ufw openssl \
 -y \
  > /dev/null
@@ -260,7 +256,7 @@ echo "--------------------"
 echo "Sertificates were created!"
 echo
 
-# Configure postgresql
+Configure postgresql
 sudo -u postgres psql -c "CREATE DATABASE $Database_name_Postgres;"
 sudo -u postgres psql -c "CREATE USER $User_name_Postgres WITH PASSWORD '$Password_Postgres';"
 sudo -u postgres psql -c "ALTER DATABASE $Database_name_Postgres OWNER TO $User_name_Postgres;"
@@ -299,19 +295,34 @@ echo "User netbox was created and configured!"
 echo "--------------------"
 echo
 
-cd /opt/netbox/netbox/netbox/
-cp configuration_example.py configuration.py
-../generate_secret_key.py > key.txt
+
+cd "$Netbox_core_path"
+cp "configuration_example.py" "configuration.py"
+
+sed -i "/DATABASES = {/,/}/ {
+  /'default': {/,/}/ {
+    /'NAME': '[^']*'/ s//\'NAME': '${Database_name_Postgres}'/
+    /'USER': '[^']*'/ s//\'USER': '${User_name_Postgres}'/
+    /'PASSWORD': '[^']*'/ s//\'PASSWORD': '${Password_Postgres}'/
+  }
+}" configuration.py
+sed -i "
+  /'tasks': {/,/}/ {
+    /'PASSWORD': '[^']*'/ s//\'PASSWORD': '${Password_Redis}'/
+  }
+  /'caching': {/,/}/ {
+    /'PASSWORD': '[^']*'/ s//\'PASSWORD': '${Password_Redis}'/
+  }
+" configuration.py
+
+Netbox_secret_key=$(../generate_secret_key.py)
+sed -i " /SECRET_KEY /cSECRET_KEY = '${Netbox_secret_key}'" configuration.py
+
 
 echo
-echo "Secret key was generated in /opt/netbox/netbox/netbox/key.txt!"
+echo "Netbox was configured!"
 echo "--------------------"
 echo
-
-
-
-
-
 
 
 
