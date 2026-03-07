@@ -25,10 +25,27 @@ Ssl_certificate_key_address="/etc/ssl/private/netbox.key"
 
 Client_max_body_size="25m"
 
+Space="\ \ \ \ "
+
 
 Password_Redis=""
 
-Space="\ \ \ \ "
+
+
+function Read_Varriable {
+
+    local -n Target_buf=$1
+    local Message="$2"
+    local User_input
+
+    read -p "$Message: " User_input
+
+    if [ -n "$User_input" ]
+    then
+        Target_buf="$User_input"
+    fi
+}
+
 
 
 echo
@@ -37,25 +54,11 @@ echo "Start installing!"
 echo
 
 
-
 # Read name, address, paroles and ports
-read -p "Enter yor server name, default (empty value) - netbox.example.com: " Read_buf
-if [ -n "$Read_buf" ]
-then
-    Name_server=$Read_buf
-fi
 
-read -p "Enter address of server, default (empty value) - 127.0.0.1: " Read_buf
-if [ -n "$Read_buf" ]
-then
-    Proxy_pass_address=$Read_buf
-fi
-
-read -p "Enter port to work netbox, default (empty value) - 8081: " Read_buf
-if [ -n "$Read_buf" ]
-then
-    Proxy_pass_port=$Read_buf
-fi
+Read_Varriable Name_server "Enter yor server name, default (empty value) - netbox.example.com"
+Read_Varriable Proxy_pass_address "Enter address of server, default (empty value) - 127.0.0.1"
+Read_Varriable Proxy_pass_port "Enter port to work netbox, default (empty value) - 8081"
 
 echo -n "Enter password for Redis: " 
 read -s Read_buf
