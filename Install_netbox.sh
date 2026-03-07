@@ -28,7 +28,8 @@ Client_max_body_size="25m"
 Space="\ \ \ \ "
 
 
-Password_Redis=""
+Password_Redis
+Password_Postgres
 
 
 
@@ -96,6 +97,13 @@ Read_Varriable "Enter address of server, default (empty value) - $Proxy_pass_add
 Read_Varriable "Enter port to work netbox, default (empty value) - $Proxy_pass_port" Proxy_pass_port
 
 Read_Password "Enter password for Redis-server" Password_Redis
+if [ $? -ne 0 ]
+then
+    echo "Error reading password. Exiting."
+    exit 1
+fi
+
+Read_Password "Enter password for Postgresql" Password_Postgres
 if [ $? -ne 0 ]
 then
     echo "Error reading password. Exiting."
@@ -196,8 +204,8 @@ ln -s $Nginx_config /etc/nginx/sites-enabled/netbox.conf
 rm -f /etc/nginx/sites-enabled/default
 
 echo
-echo "Nginx was configured!"
 echo "--------------------"
+echo "Nginx was configured!"
 echo
 
 
@@ -228,8 +236,8 @@ systemctl restart redis
 
 
 echo
-echo "Redis was configured!"
 echo "--------------------"
+echo "Redis was configured!"
 echo
 
 
