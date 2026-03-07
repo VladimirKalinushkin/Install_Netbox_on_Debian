@@ -8,8 +8,10 @@ set -eu
 version=4.4.8
 
 
-Example_config_file="Includes/netbox_wth_ssl.conf"
+Example_config_nginx="./Includes/netbox_wth_ssl.conf"
 Nginx_config="/etc/nginx/sites-available/netbox.conf"
+
+Redis_config="/etc/redis/redis.conf"
 
 
 Listened_address="0.0.0.0"
@@ -23,6 +25,9 @@ Ssl_certificate_key_address="/etc/ssl/private/netbox.key"
 
 Client_max_body_size="25m"
 
+
+Password_Redis=""
+
 Space="\ \ \ \ "
 
 
@@ -33,7 +38,7 @@ echo
 
 
 
-# Read name, address and ports
+# Read name, address, paroles and ports
 read -p "Enter yor server name, default (empty value) - netbox.example.com: " Read_buf
 if [ -n "$Read_buf" ]
 then
@@ -46,10 +51,37 @@ then
     Proxy_pass_address=$Read_buf
 fi
 
-read -p "Enter port to work netbox, default (empty value) - 8081" Read_buf
+read -p "Enter port to work netbox, default (empty value) - 8081: " Read_buf
 if [ -n "$Read_buf" ]
 then
     Proxy_pass_port=$Read_buf
+fi
+
+echo -n "Enter password for Redis: " 
+read -s Read_buf
+echo
+if [ -n "$Read_buf" ]
+then
+    Check=""
+    echo -n "Re-enter password for Redis: " 
+    read -s Check
+    echo
+    if [ -n "$Check" ]
+    then
+        if [ "$Read_buf" = "$Check" ];
+        then
+            Password_Redis="$Read_buf"
+        else
+            echo "Passwords do not match! You will be exited!"
+            exit 1
+        fi
+    else
+        echo "You didn't enter your password for Redis! You will exited!"
+        exit 1
+    fi
+else
+    echo "You didn't enter your password for Redis! You will exited!"
+    exit 1
 fi
 
 
@@ -103,11 +135,11 @@ echo
 
 
 # Start nginx, redis and postgres
-systemctl start redis > /dev/null
+systemctl start redis-server > /dev/null
 systemctl start postgresql > /dev/null
 systemctl start nginx > /dev/null
 
-systemctl enable redis > /dev/null
+systemctl enable redis-server > /dev/null
 systemctl enable postgresql > /dev/null
 systemctl enable nginx > /dev/null
 
@@ -126,6 +158,62 @@ ufw allow 80 > /dev/null
 echo "Ufw was configured"
 echo
 
+
+
+# Configure nginx
+sed -e \
+    "
+    1,5{
+            /listen /c${Space}listen ${Listened_address}:${Listened_port} ssl;
+    }
+    /listen /c${Space}listen ${Listened_address}:80 ssl;
+    /server_name /c${Space}server_name ${Name_server};
+    /proxy_pass /c${Space}${Space}proxy_pass http://${Proxy_pass_address}:${Proxy_pass_port};
+    /ssl_certificate /c${Space}ssl_certificate ${Ssl_certificate_address};
+    /ssl_certificate_key /c${Space}ssl_certificate_key ${Ssl_certificate_key_address};
+    " \
+    $Example_config_nginx > $Nginx_config
+
+rm -f /etc/nginx/sites-enabled/netbox.conf
+ln -s $Nginx_config /etc/nginx/sites-enabled/netbox.conf
+rm -f /etc/nginx/sites-enabled/default
+
+echo
+echo "Nginx was configured!"
+echo "--------------------"
+echo
+
+
+
+# Configure redis
+cp $Redis_config "$Redis_config.backup"
+
+sed -i "/^#/d" $Redis_config
+sed -i "/^$/d" $Redis_config
+
+Count_pat_1=$(sed -n '/requirepass /{=;q;}' $Redis_config)
+if [ -n "$Count_pat_1" ];
+then
+    sed -i " /requirepass /crequirepass ${Password_Redis}" $Redis_config
+else
+    echo "requirepass $Password_Redis" >> $Redis_config
+fi
+
+Count_pat_2=$(sed -n '/supervised /{=;q;}' $Redis_config)
+if [ -n "$Count_pat_2" ];
+then
+    sed -i " /supervised /csupervised systemd" $Redis_config
+else
+    echo "supervised systemd" >> $Redis_config
+fi
+
+systemctl restart redis
+
+
+echo
+echo "Redis was configured!"
+echo "--------------------"
+echo
 
 
 # Create certificates
@@ -157,7 +245,7 @@ echo
 ln -s /opt/netbox-$version/ /opt/netbox
 
 mkdir /opt/netbox-$version/netbox/media
-adduser --system --group netbox > dev/null
+adduser --system --group netbox
 chown --recursive netbox /opt/netbox-$version/netbox/media/
 chown --recursive netbox /opt/netbox-$version/netbox/reports/
 chown --recursive netbox /opt/netbox-$version/netbox/scripts/
@@ -178,27 +266,7 @@ echo
 
 
 
-# Configure nginx
-sed -e \
-    "
-    1,5{
-            /listen /c${Space}listen ${Listened_address}:${Listened_port} ssl;
-    }
-    /listen /c${Space}listen ${Listened_address}:80 ssl;
-    /server_name /c${Space}server_name ${Name_server};
-    /proxy_pass /c${Space}${Space}proxy_pass http://${Proxy_pass_address}:${Proxy_pass_port};
-    /ssl_certificate /c${Space}ssl_certificate ${Ssl_certificate_address};
-    /ssl_certificate_key /c${Space}ssl_certificate_key ${Ssl_certificate_key_address};
-    " \
-    $Example_config_file > $Nginx_config
 
-ln -s $Nginx_config /etc/nginx/sites-enabled/netbox.conf
-rm /etc/nginx/sites-enabled/default
-
-echo
-echo "Nginx was configured!"
-echo "--------------------"
-echo
 
 
 
