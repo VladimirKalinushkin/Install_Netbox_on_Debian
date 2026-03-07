@@ -28,9 +28,11 @@ Client_max_body_size="25m"
 Space="\ \ \ \ "
 
 
-Password_Redis
-Password_Postgres
+Password_Redis=""
 
+Database_name_Postgres="netbox"
+User_name_Postgres="netbox"
+Password_Postgres=""
 
 
 function Read_Varriable {
@@ -84,6 +86,8 @@ function Read_Password {
 
 }
 
+
+
 echo
 echo "--------------------"
 echo "Start installing!"
@@ -91,7 +95,6 @@ echo
 
 
 # Read name, address, paroles and ports
-
 Read_Varriable "Enter yor server name, default (empty value) - $Name_server" Name_server
 Read_Varriable "Enter address of server, default (empty value) - $Proxy_pass_address" Proxy_pass_address
 Read_Varriable "Enter port to work netbox, default (empty value) - $Proxy_pass_port" Proxy_pass_port
@@ -102,6 +105,9 @@ then
     echo "Error reading password. Exiting."
     exit 1
 fi
+
+Read_Varriable "Enter database postgresql name, default (empty value) - $Database_name_Postgres" Database_name_Postgres
+Read_Varriable "Enter postgresql user name, default (empty value) - $User_name_Postgres" User_name_Postgres
 
 Read_Password "Enter password for Postgresql" Password_Postgres
 if [ $? -ne 0 ]
@@ -180,6 +186,8 @@ ufw enable > /dev/null
 ufw allow 443 > /dev/null
 ufw allow 80 > /dev/null
 
+echo
+echo "--------------------"
 echo "Ufw was configured"
 echo
 
@@ -251,6 +259,17 @@ echo
 echo "--------------------"
 echo "Sertificates were created!"
 echo
+
+# Configure postgresql
+sudo -u postgres psql -c "CREATE DATABASE $Database_name_Postgres;"
+sudo -u postgres psql -c "CREATE USER $User_name_Postgres WITH PASSWORD '$Password_Postgres';"
+sudo -u postgres psql -c "ALTER DATABASE $Database_name_Postgres OWNER TO $User_name_Postgres;"
+
+echo
+echo "--------------------"
+echo "Postgresql was configured!"
+echo
+
 
 
 
