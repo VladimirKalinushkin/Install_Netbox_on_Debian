@@ -13,7 +13,7 @@
     systemctl start netbox 
     systemctl start netbox-rq
     systemctl enable --now netbox 
-    systemctl enable --now netboxnetbox-rq
+    systemctl enable --now netbox-rq
     
     systemctl status netbox.service
 

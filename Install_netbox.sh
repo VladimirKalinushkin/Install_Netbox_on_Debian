@@ -30,6 +30,8 @@ Database_name_Postgres="netbox"
 User_name_Postgres="netbox"
 Password_Postgres=""
 
+Allowed_hosts_Netbox="*"
+
 
 function Read_Varriable {
 
@@ -195,7 +197,7 @@ sed -e \
     1,5{
             /listen /c${Space}listen ${Listened_address}:${Listened_port} ssl;
     }
-    /listen /c${Space}listen ${Listened_address}:80 ssl;
+    /listen /c${Space}listen ${Listened_address}:80;
     /server_name /c${Space}server_name ${Name_server};
     /proxy_pass /c${Space}${Space}proxy_pass http://${Proxy_pass_address}:${Proxy_pass_port};
     /ssl_certificate /c${Space}ssl_certificate ${Ssl_certificate_address};
@@ -256,10 +258,10 @@ echo "--------------------"
 echo "Sertificates were created!"
 echo
 
-Configure postgresql
-sudo -u postgres psql -c "CREATE DATABASE $Database_name_Postgres;"
-sudo -u postgres psql -c "CREATE USER $User_name_Postgres WITH PASSWORD '$Password_Postgres';"
-sudo -u postgres psql -c "ALTER DATABASE $Database_name_Postgres OWNER TO $User_name_Postgres;"
+# Configure postgresql
+# sudo -u postgres psql -c "CREATE DATABASE $Database_name_Postgres;"
+# sudo -u postgres psql -c "CREATE USER $User_name_Postgres WITH PASSWORD '$Password_Postgres';"
+# sudo -u postgres psql -c "ALTER DATABASE $Database_name_Postgres OWNER TO $User_name_Postgres;"
 
 echo
 echo "--------------------"
@@ -274,17 +276,17 @@ echo
 echo "--------------------"
 echo "Start downloading Netbox from github ..."
 echo
-wget https://github.com/netbox-community/netbox/archive/refs/tags/v$version.tar.gz
-tar -xzf v$version.tar.gz -C /opt
-rm v$version.tar.gz*
+# wget https://github.com/netbox-community/netbox/archive/refs/tags/v$version.tar.gz
+# tar -xzf v$version.tar.gz -C /opt
+# rm v$version.tar.gz*
 echo
 echo "End downloading Netbox from github!"
 echo "--------------------"
 echo
 
-ln -s /opt/netbox-$version/ /opt/netbox
+# ln -s /opt/netbox-$version/ /opt/netbox
 
-mkdir /opt/netbox-$version/netbox/media
+# mkdir /opt/netbox-$version/netbox/media
 adduser --system --group netbox
 chown --recursive netbox /opt/netbox-$version/netbox/media/
 chown --recursive netbox /opt/netbox-$version/netbox/reports/
@@ -299,6 +301,7 @@ echo
 cd "$Netbox_core_path"
 cp "configuration_example.py" "configuration.py"
 
+Netbox_secret_key=$(../generate_secret_key.py)
 sed -i "/DATABASES = {/,/}/ {
   /'default': {/,/}/ {
     /'NAME': '[^']*'/ s//\'NAME': '${Database_name_Postgres}'/
@@ -314,8 +317,7 @@ sed -i "
     /'PASSWORD': '[^']*'/ s//\'PASSWORD': '${Password_Redis}'/
   }
 " configuration.py
-
-Netbox_secret_key=$(../generate_secret_key.py)
+sed -i " /ALLOWED_HOSTS /cALLOWED_HOSTS = [\'${Allowed_hosts_Netbox}\']" configuration.py
 sed -i " /SECRET_KEY /cSECRET_KEY = '${Netbox_secret_key}'" configuration.py
 
 
@@ -323,6 +325,38 @@ echo
 echo "Netbox was configured!"
 echo "--------------------"
 echo
+
+
+/opt/netbox/upgrade.sh
+
+cd /opt/netbox/venv/bin
+source ./activate
+
+cd /opt/netbox/netbox
+python3 manage.py migrate
+python3 manage.py createsuperuser
+python3 manage.py collectstatic
+
+
+
+# Running NetBox as a Systemd Service and configure gunicorn
+cp /opt/netbox/contrib/gunicorn.py /opt/netbox/gunicorn.py
+
+# Configure your installation port in
+#     gunicorn.py
+#     bind = '127.0.0.1:8001'
+
+cp -v /opt/netbox/contrib/*.service /etc/systemd/system/
+systemctl daemon-reload
+
+systemctl start netbox 
+systemctl start netbox-rq
+systemctl enable --now netbox 
+systemctl enable --now netbox-rq
+
+systemctl status netbox.service
+
+
 
 
 
