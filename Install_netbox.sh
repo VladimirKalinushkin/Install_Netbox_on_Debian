@@ -246,8 +246,8 @@ Start_message_echo "Configure redis"
 
 cp $Redis_config "$Redis_config.backup"
 
-sed -i "/^#/d" $Redis_config
-sed -i "/^$/d" $Redis_config
+sed -i "/^#/d" "$Redis_config"
+sed -i "/^$/d" "$Redis_config"
 
 Count_pat_1=$(sed -n '/requirepass /{=;q;}' $Redis_config)
 if [ -n "$Count_pat_1" ];
@@ -313,10 +313,10 @@ sed -i " /SECRET_KEY /cSECRET_KEY = '${Netbox_secret_key}'" configuration.py
 
 /opt/netbox/upgrade.sh
 
-cd /opt/netbox/venv/bin
+cd "/opt/netbox-$version/venv/bin"
 source ./activate
 
-cd /opt/netbox/netbox
+cd "/opt/$/opt/netbox-$version/netbox"
 python3 manage.py migrate
 python3 manage.py createsuperuser
 python3 manage.py collectstatic
@@ -329,13 +329,14 @@ End_message_echo "Netbox was configured!"
 Start_message_echo "Running NetBox as a Systemd Service and configure gunicorn"
 
 cp "$Example_configs/gunicorn.py" "/opt/netbox-$version/gunicorn.py"
+cd "/opt/netbox-$version"
 
-sed -i "/^#/d" "/opt/netbox-$version/gunicorn.py"
-sed -i "/^$/d" "/opt/netbox-$version/gunicorn.py"
+sed -i "/^#/d" "gunicorn.py"
+sed -i "/^$/d" "gunicorn.py"
 
-sed -i " /bind /cbind = \'$Proxy_path_address:$Proxy_path_port\'" "/opt/netbox-$version/gunicorn.py"
+sed -i " /bind /cbind = \'$Proxy_path_address:$Proxy_path_port\'" "gunicorn.py"
 
-cp -v /opt/netbox/contrib/*.service /etc/systemd/system/
+cp -v "$Example_configs/*.service" "/etc/systemd/system/"
 systemctl daemon-reload
 
 systemctl start netbox > /dev/null
