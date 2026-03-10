@@ -90,14 +90,12 @@ function Start_message_echo {
     echo
     echo "--------------------"
     echo "$Message ..."
-    echo
 
 }
 function End_message_echo {
 
     local Message="$1"
     
-    echo
     echo "$Message"
     echo "--------------------"
     echo
@@ -183,12 +181,12 @@ End_message_echo "Brandmauer was configured!"
 
 Start_message_echo "Start downloading Netbox from github"
 
-# wget https://github.com/netbox-community/netbox/archive/refs/tags/v$version.tar.gz
-# tar -xzf v$version.tar.gz -C /opt
-# rm v$version.tar.gz*
+wget https://github.com/netbox-community/netbox/archive/refs/tags/v$version.tar.gz
+tar -xzf v$version.tar.gz -C /opt
+rm v$version.tar.gz*
 
-# rm -rf /opt/netbox
-# ln -s /opt/netbox-$version/ /opt/netbox
+rm -rf /opt/netbox
+ln -s /opt/netbox-$version/ /opt/netbox
 
 End_message_echo "End downloading Netbox from github!"
 
@@ -196,7 +194,10 @@ End_message_echo "End downloading Netbox from github!"
 
 Start_message_echo "Create user for Netbox"
 
-# mkdir /opt/netbox-$version/netbox/media
+if [ ! -d "/opt/netbox-$version/netbox/media" ]
+then
+    mkdir /opt/netbox-$version/netbox/media
+fi
 adduser --system --group netbox > /dev/null
 chown --recursive netbox /opt/netbox-$version/netbox/media/ > /dev/null
 chown --recursive netbox /opt/netbox-$version/netbox/reports/ > /dev/null
@@ -273,10 +274,15 @@ End_message_echo "Redis was configured!"
 
 Start_message_echo "Configure postgresql"
 
-# Configure postgresql
-# sudo -u postgres psql -c "CREATE DATABASE $Database_name_Postgres;"
-# sudo -u postgres psql -c "CREATE USER $User_name_Postgres WITH PASSWORD '$Password_Postgres';"
-# sudo -u postgres psql -c "ALTER DATABASE $Database_name_Postgres OWNER TO $User_name_Postgres;"
+Check=$(sudo -u $User_name_Postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='$Database_name_Postgres'")
+if [ "$Check" = "1" ];
+then
+    echo "Base $Database_name_Postgres was created."
+else
+    sudo -u postgres psql -c "CREATE DATABASE $Database_name_Postgres;"
+    sudo -u postgres psql -c "CREATE USER $User_name_Postgres WITH PASSWORD '$Password_Postgres';"
+    sudo -u postgres psql -c "ALTER DATABASE $Database_name_Postgres OWNER TO $User_name_Postgres;"
+fi
 
 End_message_echo "Postgresql was configured!"
 
@@ -316,7 +322,7 @@ sed -i " /SECRET_KEY /cSECRET_KEY = '${Netbox_secret_key}'" configuration.py
 cd "/opt/netbox-$version/venv/bin"
 source ./activate
 
-cd "/opt/$/opt/netbox-$version/netbox"
+cd "/opt/netbox-$version/netbox"
 python3 manage.py migrate
 python3 manage.py createsuperuser
 python3 manage.py collectstatic
@@ -336,7 +342,7 @@ sed -i "/^$/d" "gunicorn.py"
 
 sed -i " /bind /cbind = \'$Proxy_path_address:$Proxy_path_port\'" "gunicorn.py"
 
-cp -v "$Example_configs/*.service" "/etc/systemd/system/"
+cp -v /opt/netbox/contrib/*.service /etc/systemd/system/
 systemctl daemon-reload
 
 systemctl start netbox > /dev/null
