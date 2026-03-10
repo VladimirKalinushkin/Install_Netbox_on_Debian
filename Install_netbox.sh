@@ -46,7 +46,6 @@ function Read_Varriable {
         Target_buf="$User_input"
     fi
 }
-
 function Read_Password {
 
     local -n Target_buf=$2
@@ -84,12 +83,31 @@ function Read_Password {
 
 }
 
+function Start_message_echo {
+
+    local Message="$1"
+    
+    echo
+    echo "--------------------"
+    echo "$Message ..."
+    echo
+
+}
+function End_message_echo {
+
+    local Message="$1"
+    
+    echo
+    echo "$Message"
+    echo "--------------------"
+    echo
+
+}
 
 
-echo
-echo "--------------------"
-echo "Start installing ..."
-echo
+
+Start_message_echo "Start installing"
+
 
 
 # Read name, address, paroles and ports
@@ -118,78 +136,28 @@ then
 fi
 
 
-# Install packages
-echo
-echo "--------------------"
-echo "Start apt update ..."
-echo
 
+# Install packages
 apt update -y > /dev/null
 
-echo
-echo "Apt was updated!"
-echo "--------------------"
-echo
+
+Start_message_echo "Start installing Wget,redis-server, postgresql and curl"
+apt install -y wget curl redis-server postgresql -y > /dev/null
+End_message_echo "Wget,redis-server, postgresql and curl were installed!"
 
 
-# Postgres and redis install
-echo
-echo "--------------------"
-echo "Start installing Wget,redis-server, postgresql and curl ..."
-echo
-
-apt install -y wget curl \
-redis-server \
-postgresql \
--y \
- > /dev/null
-
-echo
-echo "Wget,redis-server, postgresql and curl were installed!"
-echo "--------------------"
-echo
+Start_message_echo "Start installing Puthon libraries!"
+apt install -y python3 python3-pip python3-venv python3-dev build-essential libxml2-dev libxslt1-dev libffi-dev libpq-dev \
+libssl-dev zlib1g-dev -y  > /dev/null
+End_message_echo "Python libraries were installed!"
 
 
-# Python libraries install
-echo
-echo "--------------------"
-echo "Start installing Puthon libraries!"
-echo
-
-apt install -y python3 python3-pip python3-venv python3-dev \
-build-essential libxml2-dev libxslt1-dev libffi-dev libpq-dev \
-libssl-dev zlib1g-dev \
--y \
- > /dev/null
-
-echo
-echo "Python libraries were installed!"
-echo "--------------------"
-echo
+Start_message_echo "Start installing nginx, ufw and openssl"
+apt install nginx ufw openssl -y  > /dev/null
+End_message_echo "Nginx, ufw and openssl were installed!"
 
 
-# Install nginx, ufw and openssl
-echo
-echo "--------------------"
-echo "Start installing nginx, ufw and openssl ..."
-echo
-
-apt install nginx ufw openssl \
--y \
- > /dev/null
-
-echo
-echo "Nginx, ufw and openssl were installed!"
-echo "--------------------"
-echo
-
-
-
-# Start nginx, redis and postgres
-echo
-echo "--------------------"
-echo "Start nginx, redis and postgres! ..."
-echo
+Start_message_echo "Start nginx, redis and postgres!"
 
 systemctl start redis-server > /dev/null
 systemctl start postgresql > /dev/null
@@ -199,34 +167,21 @@ systemctl enable redis-server > /dev/null
 systemctl enable postgresql > /dev/null
 systemctl enable nginx > /dev/null
 
-echo
-echo "Nginx, redis and postgresql were enabled in systemd!"
-echo "--------------------"
-echo
+End_message_echo "Nginx, redis and postgresql were enabled in systemd!"
 
 
-# Configure ufw
-echo
-echo "--------------------"
-echo "Configure brandmauer ..."
-echo
+
+Start_message_echo "Configure brandmauer"
 
 ufw enable > /dev/null
 ufw allow 443 > /dev/null
 ufw allow 80 > /dev/null
 
-echo
-echo "Brandmauer was configured"
-echo "--------------------"
-echo
+End_message_echo "Brandmauer was configured!"
 
 
 
-# Download netbox
-echo
-echo "--------------------"
-echo "Start downloading Netbox from github ..."
-echo
+Start_message_echo "Start downloading Netbox from github"
 
 # wget https://github.com/netbox-community/netbox/archive/refs/tags/v$version.tar.gz
 # tar -xzf v$version.tar.gz -C /opt
@@ -235,16 +190,11 @@ echo
 # rm -rf /opt/netbox
 # ln -s /opt/netbox-$version/ /opt/netbox
 
-echo
-echo "End downloading Netbox from github!"
-echo "--------------------"
-echo
+End_message_echo "End downloading Netbox from github!"
 
 
-echo
-echo "--------------------"
-echo "Create user for Netbox ..."
-echo
+
+Start_message_echo "Create user for Netbox"
 
 # mkdir /opt/netbox-$version/netbox/media
 adduser --system --group netbox > /dev/null
@@ -252,36 +202,22 @@ chown --recursive netbox /opt/netbox-$version/netbox/media/ > /dev/null
 chown --recursive netbox /opt/netbox-$version/netbox/reports/ > /dev/null
 chown --recursive netbox /opt/netbox-$version/netbox/scripts/ > /dev/null
 
-echo
-echo "User netbox was created and configured!"
-echo "--------------------"
-echo
+End_message_echo "User netbox was created and configured!"
 
 
 
-# Create certificates
-echo
-echo "--------------------"
-echo "Create sertificates ..."
-echo
+Start_message_echo "Create sertificates"
 
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
 -out $Ssl_certificate_address \
 -keyout $Ssl_certificate_key_address \
  > /dev/null
 
-echo
-echo "Sertificates were created!"
-echo "--------------------"
-echo
+End_message_echo "Sertificates were created!"
 
 
-# Configure nginx
-echo
-echo "--------------------"
-echo "Configure nginx ..."
-echo
 
+Start_message_echo "Configure nginx"
 
 sed -e \
     "
@@ -302,17 +238,11 @@ rm -f /etc/nginx/sites-enabled/default
 
 systemctl restart nginx
 
-echo
-echo "Nginx was configured!"
-echo "--------------------"
-echo
+End_message_echo "Nginx was configured!"
 
 
-# Configure redis
-echo
-echo "--------------------"
-echo "Configure redis ..."
-echo
+
+Start_message_echo "Configure redis"
 
 cp $Redis_config "$Redis_config.backup"
 
@@ -337,32 +267,22 @@ fi
 
 systemctl restart redis
 
-echo
-echo "Redis was configured!"
-echo "--------------------"
-echo
+End_message_echo "Redis was configured!"
 
 
-echo
-echo "--------------------"
-echo "Configure postgresql ..."
-echo
+
+Start_message_echo "Configure postgresql"
 
 # Configure postgresql
 # sudo -u postgres psql -c "CREATE DATABASE $Database_name_Postgres;"
 # sudo -u postgres psql -c "CREATE USER $User_name_Postgres WITH PASSWORD '$Password_Postgres';"
 # sudo -u postgres psql -c "ALTER DATABASE $Database_name_Postgres OWNER TO $User_name_Postgres;"
 
-echo
-echo "Postgresql was configured!"
-echo "--------------------"
-echo
+End_message_echo "Postgresql was configured!"
 
 
-echo
-echo "--------------------"
-echo "Start configuring Netbox ..."
-echo
+
+Start_message_echo "Start configuring Netbox"
 
 cd "$Netbox_core_path"
 cp "configuration_example.py" "configuration.py"
@@ -402,26 +322,13 @@ python3 manage.py createsuperuser
 python3 manage.py collectstatic
 
 
-echo
-echo "Netbox was configured!"
-echo "--------------------"
-echo
+End_message_echo "Netbox was configured!"
 
 
 
-# Running NetBox as a Systemd Service and configure gunicorn
-echo
-echo "--------------------"
-echo "Running NetBox as a Systemd Service and configure gunicorn ..."
-echo
-
+Start_message_echo "Running NetBox as a Systemd Service and configure gunicorn"
 
 cp "$Example_configs/gunicorn.py" "/opt/netbox-$version/gunicorn.py"
-
-# Configure your installation port in
-#     gunicorn.py
-#     bind = '127.0.0.1:8001'
-
 
 sed -i "/^#/d" "/opt/netbox-$version/gunicorn.py"
 sed -i "/^$/d" "/opt/netbox-$version/gunicorn.py"
@@ -439,16 +346,10 @@ systemctl enable --now netbox-rq > /dev/null
 systemctl status netbox.service
 systemctl status netbox-rq
 
-
-echo
-echo "Netbox was running!"
-echo "--------------------"
-echo
+End_message_echo "Netbox was running!"
 
 
 
-echo
-echo "End installing!"
-echo "--------------------"
+End_message_echo "End installing!"
 
 
