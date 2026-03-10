@@ -21,7 +21,7 @@ For wach actual release see [https://github.com/netbox-community/netbox/releases
 
 
 ### 1. Install Requirements packages and download netbox with 
-`Install_netbox.sh`
+`Install_packages.sh`
 
 ### 2. Configure Redis and PostgreSQL:
 
@@ -160,6 +160,19 @@ For wach actual release see [https://github.com/netbox-community/netbox/releases
 
 ##### b. Configure your installation port in /opt/netbox/gunicorn.py/gunicorn.py (bind = '127.0.0.1:8001')
 
+
+### 11. Install and configuring Apache or Nginx as a Reverse Proxy
+
 #### Example config in /opt/netbox/contrib/ is nginx.conf and apache.conf
+
+            Or you can take example in netbox_witht_ssl.conf for work on port 80 without ssl (there is)
+            Or can take netbox_tht_ssl.conf to configure your server to work with ssl 
+            (identity with /opt/netbox/contrib/nginx.conf, there is)
+
+#### Run
+`cp /opt/netbox/contrib/nginx.conf /etc/nginx/sites-available/netbox.conf`
+`rm /etc/nginx/sites-enabled/default`
+ `ln -s /etc/nginx/sites-available/netbox.conf /etc/nginx/sites-enabled/netbox.conf`
+
 #### Rename your server_name in nginx netbox config file and check your configuration
 
