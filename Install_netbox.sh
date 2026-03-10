@@ -8,15 +8,15 @@ set -eu
 version=4.4.8
 
 
-Example_config_nginx="./Includes/netbox_wth_ssl.conf"
 Nginx_config="/etc/nginx/sites-available/netbox.conf"
 Redis_config="/etc/redis/redis.conf"
 Netbox_core_path="/opt/netbox-$version/netbox/netbox"
+Example_configs="/opt/netbox-$version/contrib"
 
 Listened_address="0.0.0.0"
 Listened_port="443"
-Proxy_pass_address="127.0.0.1"
-Proxy_pass_port="8001"
+Proxy_path_address="127.0.0.1"
+Proxy_path_port="8001"
 Name_server="netbox.example.com"
 Ssl_certificate_address="/etc/ssl/certs/netbox.crt"
 Ssl_certificate_key_address="/etc/ssl/private/netbox.key"
@@ -88,14 +88,17 @@ function Read_Password {
 
 echo
 echo "--------------------"
-echo "Start installing!"
+echo "Start installing ..."
 echo
 
 
 # Read name, address, paroles and ports
 Read_Varriable "Enter yor server name, default (empty value) - $Name_server" Name_server
-Read_Varriable "Enter address of server, default (empty value) - $Proxy_pass_address" Proxy_pass_address
-Read_Varriable "Enter port to work netbox, default (empty value) - $Proxy_pass_port" Proxy_pass_port
+Read_Varriable "Enter address of server, default (empty value) - $Proxy_path_address" Proxy_path_address
+Read_Varriable "Enter port to work netbox, default (empty value) - $Proxy_path_port" Proxy_path_port
+Read_Varriable "Enter port to work netbox, default (empty value) - $Allowed_hosts_Netbox - All hosts. \
+    For example - 'netbox.example.com', 'netbox.internal.local'" \
+    Allowed_hosts_Netbox
 
 Read_Password "Enter password for Redis-server" Password_Redis
 if [ $? -ne 0 ]
@@ -116,54 +119,78 @@ fi
 
 
 # Install packages
-echo "--------------------"
-echo "Start apt update!"
-apt update -y > /dev/null
 echo
 echo "--------------------"
-echo "Apt was updated!"
+echo "Start apt update ..."
 echo
 
-# Postgres and redis install
+apt update -y > /dev/null
+
+echo
+echo "Apt was updated!"
 echo "--------------------"
-echo "Start installing Wget,redis-server, postgresql and curl!"
+echo
+
+
+# Postgres and redis install
+echo
+echo "--------------------"
+echo "Start installing Wget,redis-server, postgresql and curl ..."
+echo
+
 apt install -y wget curl \
 redis-server \
 postgresql \
 -y \
  > /dev/null
+
 echo
-echo "--------------------"
 echo "Wget,redis-server, postgresql and curl were installed!"
+echo "--------------------"
 echo
 
+
 # Python libraries install
+echo
 echo "--------------------"
 echo "Start installing Puthon libraries!"
+echo
+
 apt install -y python3 python3-pip python3-venv python3-dev \
 build-essential libxml2-dev libxslt1-dev libffi-dev libpq-dev \
 libssl-dev zlib1g-dev \
 -y \
  > /dev/null
+
 echo
-echo "--------------------"
 echo "Python libraries were installed!"
+echo "--------------------"
 echo
 
-# Install nginx
+
+# Install nginx, ufw and openssl
+echo
 echo "--------------------"
-echo "Start installing nginx, ufw and openssl!"
+echo "Start installing nginx, ufw and openssl ..."
+echo
+
 apt install nginx ufw openssl \
 -y \
  > /dev/null
+
 echo
-echo "--------------------"
 echo "Nginx, ufw and openssl were installed!"
+echo "--------------------"
 echo
 
 
 
 # Start nginx, redis and postgres
+echo
+echo "--------------------"
+echo "Start nginx, redis and postgres! ..."
+echo
+
 systemctl start redis-server > /dev/null
 systemctl start postgresql > /dev/null
 systemctl start nginx > /dev/null
@@ -173,25 +200,89 @@ systemctl enable postgresql > /dev/null
 systemctl enable nginx > /dev/null
 
 echo
-echo "--------------------"
 echo "Nginx, redis and postgresql were enabled in systemd!"
+echo "--------------------"
 echo
 
 
-
 # Configure ufw
+echo
+echo "--------------------"
+echo "Configure brandmauer ..."
+echo
+
 ufw enable > /dev/null
 ufw allow 443 > /dev/null
 ufw allow 80 > /dev/null
 
 echo
+echo "Brandmauer was configured"
 echo "--------------------"
-echo "Ufw was configured"
 echo
 
 
 
+# Download netbox
+echo
+echo "--------------------"
+echo "Start downloading Netbox from github ..."
+echo
+
+# wget https://github.com/netbox-community/netbox/archive/refs/tags/v$version.tar.gz
+# tar -xzf v$version.tar.gz -C /opt
+# rm v$version.tar.gz*
+
+# rm -rf /opt/netbox
+# ln -s /opt/netbox-$version/ /opt/netbox
+
+echo
+echo "End downloading Netbox from github!"
+echo "--------------------"
+echo
+
+
+echo
+echo "--------------------"
+echo "Create user for Netbox ..."
+echo
+
+# mkdir /opt/netbox-$version/netbox/media
+adduser --system --group netbox > /dev/null
+chown --recursive netbox /opt/netbox-$version/netbox/media/ > /dev/null
+chown --recursive netbox /opt/netbox-$version/netbox/reports/ > /dev/null
+chown --recursive netbox /opt/netbox-$version/netbox/scripts/ > /dev/null
+
+echo
+echo "User netbox was created and configured!"
+echo "--------------------"
+echo
+
+
+
+# Create certificates
+echo
+echo "--------------------"
+echo "Create sertificates ..."
+echo
+
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+-out $Ssl_certificate_address \
+-keyout $Ssl_certificate_key_address \
+ > /dev/null
+
+echo
+echo "Sertificates were created!"
+echo "--------------------"
+echo
+
+
 # Configure nginx
+echo
+echo "--------------------"
+echo "Configure nginx ..."
+echo
+
+
 sed -e \
     "
     1,5{
@@ -199,24 +290,30 @@ sed -e \
     }
     /listen /c${Space}listen ${Listened_address}:80;
     /server_name /c${Space}server_name ${Name_server};
-    /proxy_pass /c${Space}${Space}proxy_pass http://${Proxy_pass_address}:${Proxy_pass_port};
+    /proxy_pass /c${Space}${Space}proxy_pass http://${Proxy_path_address}:${Proxy_path_port};
     /ssl_certificate /c${Space}ssl_certificate ${Ssl_certificate_address};
     /ssl_certificate_key /c${Space}ssl_certificate_key ${Ssl_certificate_key_address};
     " \
-    $Example_config_nginx > $Nginx_config
+    "$Example_configs/nginx.conf" > "$Nginx_config"
 
 rm -f /etc/nginx/sites-enabled/netbox.conf
 ln -s $Nginx_config /etc/nginx/sites-enabled/netbox.conf
 rm -f /etc/nginx/sites-enabled/default
 
-echo
-echo "--------------------"
-echo "Nginx was configured!"
-echo
+systemctl restart nginx
 
+echo
+echo "Nginx was configured!"
+echo "--------------------"
+echo
 
 
 # Configure redis
+echo
+echo "--------------------"
+echo "Configure redis ..."
+echo
+
 cp $Redis_config "$Redis_config.backup"
 
 sed -i "/^#/d" $Redis_config
@@ -240,22 +337,15 @@ fi
 
 systemctl restart redis
 
-
 echo
-echo "--------------------"
 echo "Redis was configured!"
+echo "--------------------"
 echo
 
-
-# Create certificates
-openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
--out $Ssl_certificate_address \
--keyout $Ssl_certificate_key_address \
- > /dev/null
 
 echo
 echo "--------------------"
-echo "Sertificates were created!"
+echo "Configure postgresql ..."
 echo
 
 # Configure postgresql
@@ -264,44 +354,24 @@ echo
 # sudo -u postgres psql -c "ALTER DATABASE $Database_name_Postgres OWNER TO $User_name_Postgres;"
 
 echo
-echo "--------------------"
 echo "Postgresql was configured!"
-echo
-
-
-
-
-# Download and configure netbox
-echo
-echo "--------------------"
-echo "Start downloading Netbox from github ..."
-echo
-# wget https://github.com/netbox-community/netbox/archive/refs/tags/v$version.tar.gz
-# tar -xzf v$version.tar.gz -C /opt
-# rm v$version.tar.gz*
-echo
-echo "End downloading Netbox from github!"
 echo "--------------------"
 echo
 
-# ln -s /opt/netbox-$version/ /opt/netbox
-
-# mkdir /opt/netbox-$version/netbox/media
-adduser --system --group netbox
-chown --recursive netbox /opt/netbox-$version/netbox/media/
-chown --recursive netbox /opt/netbox-$version/netbox/reports/
-chown --recursive netbox /opt/netbox-$version/netbox/scripts/
 
 echo
-echo "User netbox was created and configured!"
 echo "--------------------"
+echo "Start configuring Netbox ..."
 echo
-
 
 cd "$Netbox_core_path"
 cp "configuration_example.py" "configuration.py"
 
 Netbox_secret_key=$(../generate_secret_key.py)
+
+sed -i "/^#/d" "configuration.py"
+sed -i "/^$/d" "configuration.py"
+
 sed -i "/DATABASES = {/,/}/ {
   /'default': {/,/}/ {
     /'NAME': '[^']*'/ s//\'NAME': '${Database_name_Postgres}'/
@@ -321,12 +391,6 @@ sed -i " /ALLOWED_HOSTS /cALLOWED_HOSTS = [\'${Allowed_hosts_Netbox}\']" configu
 sed -i " /SECRET_KEY /cSECRET_KEY = '${Netbox_secret_key}'" configuration.py
 
 
-echo
-echo "Netbox was configured!"
-echo "--------------------"
-echo
-
-
 /opt/netbox/upgrade.sh
 
 cd /opt/netbox/venv/bin
@@ -338,25 +402,48 @@ python3 manage.py createsuperuser
 python3 manage.py collectstatic
 
 
+echo
+echo "Netbox was configured!"
+echo "--------------------"
+echo
+
+
 
 # Running NetBox as a Systemd Service and configure gunicorn
-cp /opt/netbox/contrib/gunicorn.py /opt/netbox/gunicorn.py
+echo
+echo "--------------------"
+echo "Running NetBox as a Systemd Service and configure gunicorn ..."
+echo
+
+
+cp "$Example_configs/gunicorn.py" "/opt/netbox-$version/gunicorn.py"
 
 # Configure your installation port in
 #     gunicorn.py
 #     bind = '127.0.0.1:8001'
 
+
+sed -i "/^#/d" "/opt/netbox-$version/gunicorn.py"
+sed -i "/^$/d" "/opt/netbox-$version/gunicorn.py"
+
+sed -i " /bind /cbind = \'$Proxy_path_address:$Proxy_path_port\'" "/opt/netbox-$version/gunicorn.py"
+
 cp -v /opt/netbox/contrib/*.service /etc/systemd/system/
 systemctl daemon-reload
 
-systemctl start netbox 
-systemctl start netbox-rq
-systemctl enable --now netbox 
-systemctl enable --now netbox-rq
+systemctl start netbox > /dev/null
+systemctl start netbox-rq > /dev/null
+systemctl enable --now netbox > /dev/null
+systemctl enable --now netbox-rq > /dev/null
 
 systemctl status netbox.service
+systemctl status netbox-rq
 
 
+echo
+echo "Netbox was running!"
+echo "--------------------"
+echo
 
 
 
