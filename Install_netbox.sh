@@ -104,11 +104,11 @@ function End_message_echo {
 function Instal_pack (
 
     local pack="$1"
-    
-    if [ ! "$pack --version" ]
-    then
+#    
+#     if [ ! "$pack --version" ]
+#     then
         apt install $pack -y > /dev/null
-    fi
+#     fi
 
 )
 
