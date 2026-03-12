@@ -87,7 +87,7 @@ function Start_message_echo {
     local Message="$1"
     
     echo
-    echo "--------------------"
+    echo "----------------------------------------"
     echo "$Message ..."
 
 }
@@ -96,10 +96,21 @@ function End_message_echo {
     local Message="$1"
     
     echo "$Message"
-    echo "--------------------"
+    echo "----------------------------------------"
     echo
 
 }
+
+function Instal_pack (
+
+    local pack="$1"
+    
+    if [ ! "$pack --version" ]
+    then
+        apt install $pack -y > /dev/null
+    fi
+
+)
 
 
 
@@ -109,7 +120,6 @@ Start_message_echo "Start installing"
 
 # Read name, address, paroles and ports
 Read_Varriable "Enter yor server name, default (empty value) - $Name_server" Name_server
-Read_Varriable "Enter address of server, default (empty value) - $Proxy_path_address" Proxy_path_address
 Read_Varriable "Enter port to work netbox, default (empty value) - $Proxy_path_port" Proxy_path_port
 Read_Varriable "Enter port to work netbox, default (empty value) - $Allowed_hosts_Netbox - All hosts. \
     For example - 'netbox.example.com', 'netbox.internal.local'" \
@@ -139,41 +149,50 @@ apt update -y > /dev/null
 
 
 Start_message_echo "Start installing Wget,redis-server, postgresql and curl"
-apt install -y wget curl redis-server postgresql -y > /dev/null
+Instal_pack wget
+Instal_pack redis-server
+Instal_pack postgresql
+Instal_pack curl
 End_message_echo "Wget,redis-server, postgresql and curl were installed!"
 
 
 Start_message_echo "Start installing Puthon libraries!"
-apt install -y python3 python3-pip python3-venv python3-dev build-essential libxml2-dev libxslt1-dev libffi-dev libpq-dev \
-libssl-dev zlib1g-dev -y  > /dev/null
+Instal_pack python3
+Instal_pack python3-pip
+Instal_pack python3-venv
+Instal_pack python3-dev
+Instal_pack build-essential
+Instal_pack libxml2-dev
+Instal_pack libxslt1-dev
+Instal_pack libffi-dev
+Instal_pack libpq-dev
+Instal_pack libssl-dev
+Instal_pack zlib1g-dev
 End_message_echo "Python libraries were installed!"
 
 
 Start_message_echo "Start installing nginx, ufw and openssl"
-apt install nginx ufw openssl -y  > /dev/null
+Instal_pack nginx
+Instal_pack ufw
+Instal_pack openssl
 End_message_echo "Nginx, ufw and openssl were installed!"
 
 
 Start_message_echo "Start nginx, redis and postgres!"
-
-systemctl start redis-server > /dev/null
-systemctl start postgresql > /dev/null
-systemctl start nginx > /dev/null
-
-systemctl enable redis-server > /dev/null
-systemctl enable postgresql > /dev/null
-systemctl enable nginx > /dev/null
-
+systemctl start redis-server
+systemctl start postgresql
+systemctl start nginx
+systemctl enable redis-server
+systemctl enable postgresql
+systemctl enable nginx
 End_message_echo "Nginx, redis and postgresql were enabled in systemd!"
 
 
 
 Start_message_echo "Configure brandmauer"
-
-ufw enable > /dev/null
-ufw allow 443 > /dev/null
-ufw allow 80 > /dev/null
-
+ufw enable
+ufw allow $Listened_port
+ufw allow 80
 End_message_echo "Brandmauer was configured!"
 
 
@@ -274,10 +293,12 @@ End_message_echo "Redis was configured!"
 Start_message_echo "Configure postgresql"
 
 Check_user_postgresql=$(sudo -u postgres psql -tAc "SELECT usename, usesuper, usecreatedb FROM pg_catalog.pg_user;" \
-    | grep -c $User_name_Postgres)
+    | grep -w "netbox" \
+    | wc -l\
+    )
 if [ $Check_user_postgresql = "1" ];
 then
-    echo "User was created!"
+    echo "User $User_name_Postgres was created!"
 else
     sudo -u postgres psql -c "CREATE USER $User_name_Postgres WITH PASSWORD '$Password_Postgres';"
 fi
@@ -285,14 +306,15 @@ fi
 Check_databese_postgresql=$(sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='$Database_name_Postgres';")
 if [ "$Check_databese_postgresql" = "1" ];
 then
-    echo "Base $Database_name_Postgres was created."
+    echo "Base $Database_name_Postgres was created!"
 else
     sudo -u postgres psql -c "CREATE DATABASE $Database_name_Postgres;"
 fi
 
-sudo -u postgres psql -c "ALTER DATABASE $Database_name_Postgres OWNER TO $User_name_Postgres;" > /dev/null
+sudo -u postgres psql -c "ALTER DATABASE $Database_name_Postgres OWNER TO $User_name_Postgres;"
 
 End_message_echo "Postgresql was configured!"
+
 
 
 
