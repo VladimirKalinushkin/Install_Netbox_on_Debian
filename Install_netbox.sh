@@ -10,7 +10,6 @@ version=4.4.8
 
 Nginx_config="/etc/nginx/sites-available/netbox.conf"
 Redis_config="/etc/redis/redis.conf"
-Netbox_core_path="/opt/netbox-$version/netbox/netbox"
 Example_configs="/opt/netbox-$version/contrib"
 
 Listened_address="0.0.0.0"
@@ -276,22 +275,18 @@ Start_message_echo "Configure postgresql"
 
 Check_user_postgresql=$(sudo -u postgres psql -tAc "SELECT usename, usesuper, usecreatedb FROM pg_catalog.pg_user;" \
     | grep -c $User_name_Postgres)
-if [ $Check_user_postgresql -eq 1 ];
+if [ ! $Check_user_postgresql ];
 then
-    echo "User User_name_Postgres was created."
-else
-    sudo -u postgres psql -c "CREATE USER $User_name_Postgres WITH PASSWORD '$Password_Postgres';"
+    sudo -u postgres psql -c "CREATE USER $User_name_Postgres WITH PASSWORD '$Password_Postgres';" > /dev/null
 fi
 
 Check_databese_postgresql=$(sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='$Database_name_Postgres';")
-if [ "$Check_databese_postgresql" = "1" ];
+if [ ! "$Check_databese_postgresql" ];
 then
-    echo "Base $Database_name_Postgres was created."
-else
-    sudo -u postgres psql -c "CREATE DATABASE $Database_name_Postgres;"
+    sudo -u postgres psql -c "CREATE DATABASE $Database_name_Postgres;" > /dev/null
 fi
 
-sudo -u postgres psql -c "ALTER DATABASE $Database_name_Postgres OWNER TO $User_name_Postgres;"
+sudo -u postgres psql -c "ALTER DATABASE $Database_name_Postgres OWNER TO $User_name_Postgres;" > /dev/null
 
 End_message_echo "Postgresql was configured!"
 
@@ -299,7 +294,7 @@ End_message_echo "Postgresql was configured!"
 
 Start_message_echo "Start configuring Netbox"
 
-cd "$Netbox_core_path"
+cd "/opt/netbox-$version/netbox/netbox"
 cp "configuration_example.py" "configuration.py"
 
 Netbox_secret_key=$(../generate_secret_key.py)
@@ -326,7 +321,7 @@ sed -i " /ALLOWED_HOSTS /cALLOWED_HOSTS = [\'${Allowed_hosts_Netbox}\']" configu
 sed -i " /SECRET_KEY /cSECRET_KEY = '${Netbox_secret_key}'" configuration.py
 
 
-/opt/netbox/upgrade.sh
+/opt/netbox-$version/upgrade.sh
 
 cd "/opt/netbox-$version/venv/bin"
 source ./activate
@@ -351,7 +346,7 @@ sed -i "/^$/d" "gunicorn.py"
 
 sed -i " /bind /cbind = \'$Proxy_path_address:$Proxy_path_port\'" "gunicorn.py"
 
-cp -v /opt/netbox/contrib/*.service /etc/systemd/system/
+cp -v /opt/netbox-$version/contrib/*.service /etc/systemd/system/
 systemctl daemon-reload
 
 systemctl start netbox > /dev/null
