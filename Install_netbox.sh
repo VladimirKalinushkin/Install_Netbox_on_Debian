@@ -104,11 +104,35 @@ function End_message_echo {
 function Instal_pack (
 
     local pack="$1"
-#    
-#     if [ ! "$pack --version" ]
-#     then
-        apt install $pack -y > /dev/null
-#     fi
+
+    if [ -z "$pack" ]; then
+        echo "Error with install $pack!" >&2
+        echo
+        return 1
+    fi
+
+    if command -v "$pack" > /dev/null 2>&1
+    then
+        if "$pack" --version > /dev/null 2>&1
+        then
+            return 0
+        else
+            return 0
+        fi
+    else
+        echo "Start installing '$pack' ..."
+        echo
+
+        if apt install $pack -y > /dev/null
+        then
+            return 0
+        else
+            echo "Error with install '$pack'!" >&2
+            echo
+            return 1
+        fi
+    fi
+
 
 )
 
